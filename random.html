@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Vocabulary Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .card {
+            width: 350px;
+            padding: 40px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 200px;
+        }
+
+        .card-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .card-buttons button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .delete-button {
+            background-color: #dc3545;
+        }
+
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+
+        .keep-button {
+            background-color: #28a745;
+        }
+
+        .keep-button:hover {
+            background-color: #218838;
+        }
+
+        .read-button {
+            background-color: #17a2b8;
+        }
+
+        .read-button:hover {
+            background-color: #138496;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .textarea-container {
+            margin-top: 20px;
+        }
+
+        .furigana {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #555;
+        }
+        .text-to-speech-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.text-to-speech-container textarea {
+    font-size: 14px;
+    padding: 5px;
+}
+
+.text-to-speech-container button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.text-to-speech-container button:hover {
+    background-color: #0056b3;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-to-speech-container">
+    <textarea id="textToSpeech" rows="2" cols="20" placeholder="Paste a word here..."></textarea>
+    <button onclick="readText()">Read Text</button>
+</div>
+        <div id="vocabCard" class="card" style="display: none;">
+            <div id="vocabWord"></div>
+            <div id="furigana" class="furigana" style="display: none;"></div>
+            <div class="card-buttons">
+                <button class="delete-button" onclick="deleteWord()">Xóa từ</button>
+                <button class="keep-button" onclick="keepWord()">Giữ nguyên</button>
+                <button class="read-button" onclick="readWord()">Đọc</button>
+            </div>
+            <button onclick="toggleFurigana()">Xem Furigana</button>
+        </div>
+        <div class="textarea-container">
+            <textarea id="vocabList" rows="10" cols="30" placeholder="Paste your vocabulary list here..."></textarea>
+        </div>
+        <button onclick="randomVocabulary()">Random</button>
+    </div>
+
+    <script>
+        let vocabArray = [];
+
+        function randomVocabulary() {
+            const vocabTextarea = document.getElementById("vocabList").value.trim();
+            vocabArray = vocabTextarea.split('\n').filter(word => word.trim() !== '');
+
+            if (vocabArray.length > 0) {
+                const randomIndex = Math.floor(Math.random() * vocabArray.length);
+                const randomWord = vocabArray[randomIndex];
+                
+                const vocabCard = document.getElementById("vocabCard");
+                const vocabWord = document.getElementById("vocabWord");
+                vocabWord.textContent = randomWord;
+                vocabCard.style.display = "flex";
+
+                // Fetch furigana for the selected word
+                fetchFurigana(randomWord);
+            } else {
+                alert("Please enter a list of vocabulary words.");
+            }
+        }
+function readText() {
+    const textToRead = document.getElementById("textToSpeech").value.trim();
+    if (textToRead) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'ja-JP'; // Set the language to Japanese or other as needed
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert('Speech synthesis not supported in this browser.');
+        }
+    } else {
+        alert('Please paste a word into the text area.');
+    }
+}
+
+function fetchFurigana(word) {
+    const waniKaniUrl = `https://api.wanikani.com/v2/subjects?ids=${encodeURIComponent(word)}`;
+
+    fetch(waniKaniUrl, {
+        headers: {
+            'Authorization': 'Bearer YOUR_API_KEY' // Thay YOUR_API_KEY bằng khóa API của bạn
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok from WaniKani API.');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.data.length > 0) {
+            const readings = data.data.map(entry => entry.readings.join(', ')).join('; ');
+            const furiganaElement = document.getElementById("furigana");
+            furiganaElement.textContent = readings || 'No furigana available from WaniKani';
+        } else {
+            const furiganaElement = document.getElementById("furigana");
+            furiganaElement.textContent = 'No results found from WaniKani.';
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching furigana from WaniKani:", error);
+        const furiganaElement = document.getElementById("furigana");
+        furiganaElement.textContent = 'Error fetching furigana from WaniKani.';
+    });
+}
+
+        function toggleFurigana() {
+            const furiganaElement = document.getElementById("furigana");
+            furiganaElement.style.display = (furiganaElement.style.display === 'none' || furiganaElement.style.display === '') ? 'block' : 'none';
+        }
+
+        function readWord() {
+            const word = document.getElementById("vocabWord").textContent;
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'ja-JP'; // Set the language to Japanese
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Speech synthesis not supported in this browser.');
+            }
+        }
+
+        function deleteWord() {
+            const wordToDelete = document.getElementById("vocabWord").textContent;
+            vocabArray = vocabArray.filter(word => word !== wordToDelete);
+            document.getElementById("vocabList").value = vocabArray.join('\n');
+            document.getElementById("vocabCard").style.display = "none";
+        }
+
+        function keepWord() {
+            document.getElementById("vocabCard").style.display = "none";
+        }
+    </script>
+</body>
+</html>
